@@ -206,12 +206,34 @@ button{font-family:inherit; cursor:pointer;}
   <main>
     <section id="journal" class="panel active">
       <div class="journal-head">
-        <h2>Actualité économique</h2>
-        <button class="refresh-btn" id="refreshBtn">Actualiser</button>
+        <h2>Journal</h2>
+        <button class="refresh-btn" id="newPostBtn">+ Nouvelle note</button>
       </div>
-      <div class="journal-status" id="journalStatus"></div>
-      <div class="news-list" id="newsList">
-        <div class="empty-state">Clique sur « Actualiser » pour charger les dernières actualités (France, Europe, international).</div>
+
+      <div class="lect-form" id="postForm">
+        <h3 id="postFormTitle">Nouvelle note</h3>
+        <input type="hidden" id="postId">
+        <div class="row">
+          <label>Titre<input type="text" id="postTitre" placeholder="Titre de la note"></label>
+          <label>Date<input type="date" id="postDate"></label>
+          <label>Étiquette(s)<input type="text" id="postTags" placeholder="ex : inflation, BCE, marchés"></label>
+        </div>
+        <div class="row">
+          <label style="flex:1 1 100%;">Contenu<textarea id="postContent" style="min-height:200px;" placeholder="Ta note, ton analyse, un lien commenté, une réflexion du jour…"></textarea></label>
+        </div>
+        <div class="form-actions">
+          <button class="save-btn" id="postSaveBtn">Enregistrer</button>
+          <button class="cancel-btn" id="postCancelBtn">Annuler</button>
+        </div>
+      </div>
+
+      <div class="lect-filters" id="postTagChips"></div>
+      <div class="lect-filters">
+        <input type="text" class="lect-search" id="postSearch" placeholder="Rechercher dans tes notes…">
+      </div>
+
+      <div class="news-list" id="postList">
+        <div class="empty-state">Aucune note pour l'instant — clique sur « + Nouvelle note » pour commencer ton journal.</div>
       </div>
     </section>
 
@@ -382,70 +404,144 @@ document.querySelectorAll('.tab').forEach(tab=>{
   });
 });
 
-/* ---------------- Journal ---------------- */
-const refreshBtn = document.getElementById('refreshBtn');
-const journalStatus = document.getElementById('journalStatus');
-const newsList = document.getElementById('newsList');
+/* ---------------- Journal (blog perso) ---------------- */
+const POSTS_KEY = 'journal-posts';
+let posts = [];
+let postFilterTag = 'Tous';
+let postEditingId = null;
 
-refreshBtn.addEventListener('click', fetchNews);
-
-async function fetchNews(){
-  refreshBtn.disabled = true;
-  journalStatus.textContent = "Recherche des dernières actualités…";
-  newsList.innerHTML = '';
+async function loadPosts(){
   try{
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1500,
-        messages: [{
-          role: "user",
-          content: "Donne-moi 6 actualités économiques récentes et significatives, en mélangeant France, Europe et international (marchés, banques centrales, entreprises, indicateurs macroéconomiques). Réponds UNIQUEMENT avec un tableau JSON valide, sans aucun texte autour, sans balises markdown, sans clé englobante. Format de chaque élément : {\"titre\": string, \"zone\": \"France\" | \"Europe\" | \"Monde\", \"resume\": string (2 phrases maximum, en français), \"source\": string (nom du média)}."
-        }],
-        tools: [{type: "web_search_20250305", name: "web_search"}]
-      })
-    });
+    const raw = localStorage.getItem(POSTS_KEY);
+    posts = raw ? JSON.parse(raw) : [];
+  } catch(e){
+    posts = [];
+  }
+  renderPostFilters();
+  renderPosts();
+}
 
-    if(!res.ok){
-      throw new Error("Réponse HTTP " + res.status);
-    }
-
-    const data = await res.json();
-    const text = (data.content || [])
-      .filter(b => b.type === "text")
-      .map(b => b.text)
-      .join("\n");
-
-    const clean = text.replace(/```json|```/g, "").trim();
-    const items = JSON.parse(clean);
-
-    renderNews(items);
-    journalStatus.textContent = "Mis à jour à " + new Date().toLocaleTimeString('fr-FR');
-  } catch(err){
-    console.error(err);
-    journalStatus.textContent = "Impossible de charger l'actualité pour le moment.";
-    newsList.innerHTML = '<div class="empty-state">Réessaie dans un instant — la recherche a échoué ou la réponse n\'a pas pu être lue.</div>';
-  } finally {
-    refreshBtn.disabled = false;
+function savePosts(){
+  try{
+    localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
+  } catch(e){
+    console.error('Erreur de sauvegarde du journal', e);
+    alert('La sauvegarde locale a échoué.');
   }
 }
 
-function renderNews(items){
-  if(!Array.isArray(items) || items.length === 0){
-    newsList.innerHTML = '<div class="empty-state">Aucune actualité trouvée.</div>';
+const postFormEl = document.getElementById('postForm');
+document.getElementById('newPostBtn').addEventListener('click', ()=> openPostForm(null));
+document.getElementById('postCancelBtn').addEventListener('click', closePostForm);
+document.getElementById('postSaveBtn').addEventListener('click', savePostForm);
+document.getElementById('postSearch').addEventListener('input', renderPosts);
+
+function openPostForm(id){
+  postEditingId = id;
+  const p = id ? posts.find(x=>x.id===id) : null;
+  document.getElementById('postFormTitle').textContent = p ? 'Modifier la note' : 'Nouvelle note';
+  document.getElementById('postId').value = p ? p.id : '';
+  document.getElementById('postTitre').value = p ? p.titre : '';
+  document.getElementById('postDate').value = p ? p.date : new Date().toISOString().slice(0,10);
+  document.getElementById('postTags').value = p ? p.tags : '';
+  document.getElementById('postContent').value = p ? p.content : '';
+  postFormEl.classList.add('open');
+  document.getElementById('postTitre').focus();
+  postFormEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function closePostForm(){
+  postFormEl.classList.remove('open');
+  postEditingId = null;
+}
+
+function savePostForm(){
+  const titre = document.getElementById('postTitre').value.trim();
+  if(!titre){
+    document.getElementById('postTitre').focus();
     return;
   }
-  newsList.innerHTML = items.map(it => `
-    <div class="news-card zone-${escapeHtml(it.zone||'')}">
-      <span class="zone">${escapeHtml(it.zone||'—')}</span>
-      <h3>${escapeHtml(it.titre||'')}</h3>
-      <p>${escapeHtml(it.resume||'')}</p>
-      <span class="src">${escapeHtml(it.source||'')}</span>
+  const data = {
+    titre,
+    date: document.getElementById('postDate').value || new Date().toISOString().slice(0,10),
+    tags: document.getElementById('postTags').value.trim(),
+    content: document.getElementById('postContent').value.trim(),
+    updatedAt: Date.now()
+  };
+  if(postEditingId){
+    const idx = posts.findIndex(p=>p.id===postEditingId);
+    if(idx>-1) posts[idx] = {...posts[idx], ...data};
+  } else {
+    data.id = 'p' + Date.now() + Math.floor(Math.random()*1000);
+    posts.push(data);
+  }
+  savePosts();
+  closePostForm();
+  renderPostFilters();
+  renderPosts();
+}
+
+function renderPostFilters(){
+  const allTags = new Set();
+  posts.forEach(p => (p.tags||'').split(',').map(t=>t.trim()).filter(Boolean).forEach(t=>allTags.add(t)));
+  const tags = ['Tous', ...Array.from(allTags).sort()];
+  document.getElementById('postTagChips').innerHTML = tags.map(t => {
+    const count = t==='Tous' ? posts.length : posts.filter(p=>(p.tags||'').split(',').map(x=>x.trim()).includes(t)).length;
+    return `<button class="chip ${postFilterTag===t?'active':''}" data-tag="${escapeHtml(t)}">${escapeHtml(t)} <span class="count">${count}</span></button>`;
+  }).join('');
+  document.querySelectorAll('#postTagChips .chip').forEach(c=>{
+    c.addEventListener('click', ()=>{ postFilterTag = c.dataset.tag; renderPostFilters(); renderPosts(); });
+  });
+}
+
+function renderPosts(){
+  const q = document.getElementById('postSearch').value.trim().toLowerCase();
+  let items = posts.filter(p => {
+    if(postFilterTag !== 'Tous' && !(p.tags||'').split(',').map(t=>t.trim()).includes(postFilterTag)) return false;
+    if(q){
+      const hay = (p.titre+' '+p.content+' '+p.tags).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  }).sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.updatedAt||0)-(a.updatedAt||0));
+
+  const list = document.getElementById('postList');
+  if(items.length === 0){
+    list.innerHTML = '<div class="empty-state">Aucune note pour ces filtres.</div>';
+    return;
+  }
+  list.innerHTML = items.map(p => `
+    <div class="news-card" data-id="${p.id}">
+      <span class="zone">${p.date ? new Date(p.date).toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'}) : ''}</span>
+      <h3>${escapeHtml(p.titre||'')}</h3>
+      <p style="white-space:pre-wrap;">${escapeHtml(p.content||'')}</p>
+      ${p.tags ? `<div class="tags" style="margin-top:8px;">${p.tags.split(',').map(t=>t.trim()).filter(Boolean).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+      <div class="card-actions" style="margin-top:10px;">
+        <button class="edit-btn" data-id="${p.id}">Modifier</button>
+        <button class="danger del-post-btn" data-id="${p.id}">Supprimer</button>
+      </div>
     </div>
   `).join('');
+
+  list.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', ()=> openPostForm(b.dataset.id)));
+  list.querySelectorAll('.del-post-btn').forEach(b => b.addEventListener('click', ()=> handlePostDelete(b)));
 }
+
+function handlePostDelete(btn){
+  if(btn.dataset.confirm !== '1'){
+    btn.dataset.confirm = '1';
+    btn.textContent = 'Confirmer ?';
+    setTimeout(()=>{ btn.dataset.confirm = '0'; btn.textContent = 'Supprimer'; }, 3000);
+    return;
+  }
+  const id = btn.dataset.id;
+  posts = posts.filter(p => p.id !== id);
+  savePosts();
+  renderPostFilters();
+  renderPosts();
+}
+
+loadPosts();
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
