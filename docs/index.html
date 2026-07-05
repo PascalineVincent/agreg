@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ÉCART — actu & exercices</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,72,400;0,72,600;1,72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --ink:#10192B;
+  --ink-2:#1A2740;
+  --paper:#F2E9D8;
+  --paper-dim:#E4D9C2;
+  --gold:#B8862B;
+  --gold-bright:#D9A63C;
+  --teal:#2F6F63;
+  --brick:#A6423D;
+  --text-on-ink:#EDE7D8;
+  --text-dim:#9AA6BE;
+  --serif:'Newsreader', Georgia, serif;
+  --sans:'IBM Plex Sans', -apple-system, sans-serif;
+  --mono:'IBM Plex Mono', 'Courier New', monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{background:var(--ink); color:var(--text-on-ink); font-family:var(--sans); min-height:100vh;}
+button{font-family:inherit; cursor:pointer;}
+:focus-visible{outline:2px solid var(--gold-bright); outline-offset:2px;}
+
+.app{max-width:920px; margin:0 auto; padding:0 20px 60px;}
+
+.masthead{padding:38px 0 18px; text-align:center; border-bottom:1px solid rgba(237,231,216,0.15);}
+.wordmark{font-family:var(--serif); font-weight:600; font-size:clamp(2.4rem,7vw,3.6rem); letter-spacing:0.04em; color:var(--paper);}
+.wordmark span{color:var(--gold-bright);}
+.tagline{font-family:var(--mono); font-size:0.78rem; color:var(--text-dim); letter-spacing:0.03em; margin-top:6px; text-transform:lowercase;}
+
+.ticker-wrap{overflow:hidden; background:var(--ink-2); border-bottom:1px solid rgba(237,231,216,0.12); white-space:nowrap; padding:9px 0;}
+.ticker{display:inline-block; font-family:var(--mono); font-size:0.82rem; color:var(--paper-dim); animation:scroll 38s linear infinite;}
+.ticker .item{margin:0 1.4em;}
+.ticker .item.up{color:var(--teal);}
+.ticker .item.down{color:var(--brick);}
+.ticker .item.math{color:var(--gold-bright); font-family:var(--serif); font-style:italic;}
+@keyframes scroll{from{transform:translateX(0);} to{transform:translateX(-50%);}}
+@media (prefers-reduced-motion: reduce){.ticker{animation:none;}}
+
+.tabs{display:flex; gap:6px; margin:26px 0 0; border-bottom:1px solid rgba(237,231,216,0.15);}
+.tab{background:none; border:none; color:var(--text-dim); font-family:var(--sans); font-weight:500; font-size:0.95rem; padding:12px 4px; margin-right:22px; border-bottom:2px solid transparent; transition:color .15s;}
+.tab:hover{color:var(--paper);}
+.tab.active{color:var(--gold-bright); border-bottom-color:var(--gold-bright);}
+
+.panel{display:none; padding-top:28px;}
+.panel.active{display:block;}
+
+/* ---- Journal ---- */
+.journal-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+.journal-head h2{font-family:var(--serif); font-weight:600; font-size:1.4rem; color:var(--paper);}
+.refresh-btn{background:var(--gold); color:var(--ink); border:none; padding:9px 18px; border-radius:2px; font-weight:600; font-size:0.85rem; letter-spacing:0.02em;}
+.refresh-btn:hover{background:var(--gold-bright);}
+.refresh-btn:disabled{opacity:0.5; cursor:wait;}
+.journal-status{font-family:var(--mono); font-size:0.8rem; color:var(--text-dim); margin-bottom:16px; min-height:1.2em;}
+
+.news-list{display:flex; flex-direction:column; gap:14px;}
+.news-card{background:var(--paper); color:var(--ink); padding:18px 20px; border-left:4px solid var(--gold);}
+.news-card .zone{font-family:var(--mono); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal); font-weight:600;}
+.news-card.zone-Monde{border-left-color:var(--brick);}
+.news-card.zone-Europe{border-left-color:var(--gold);}
+.news-card.zone-France{border-left-color:var(--teal);}
+.news-card h3{font-family:var(--serif); font-weight:600; font-size:1.12rem; margin:5px 0 7px; line-height:1.3;}
+.news-card p{font-size:0.92rem; line-height:1.5; color:#2b2b2b;}
+.news-card .src{font-family:var(--mono); font-size:0.72rem; color:#6b6350; margin-top:8px; display:block;}
+.empty-state{color:var(--text-dim); font-family:var(--mono); font-size:0.85rem; padding:30px 0; text-align:center; border:1px dashed rgba(237,231,216,0.2);}
+
+/* ---- Carnet ---- */
+.chips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;}
+.chip{background:none; border:1px solid rgba(237,231,216,0.3); color:var(--text-dim); padding:7px 14px; border-radius:20px; font-size:0.82rem;}
+.chip.active{background:var(--gold); border-color:var(--gold); color:var(--ink); font-weight:600;}
+
+.carnet-toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;}
+.new-ex-btn{background:var(--teal); color:var(--text-on-ink); border:none; padding:10px 20px; font-weight:600; font-size:0.85rem;}
+.new-ex-btn:hover{background:#3a897b;}
+.score{font-family:var(--mono); font-size:0.8rem; color:var(--text-dim);}
+.score b{color:var(--gold-bright);}
+
+.ex-card{background:var(--paper); color:var(--ink); padding:26px 24px; min-height:120px;}
+.ex-card .cat-label{font-family:var(--mono); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--teal); font-weight:600;}
+.ex-card .question{font-family:var(--serif); font-size:1.2rem; line-height:1.5; margin:10px 0 18px;}
+.answer-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+.answer-row input{font-family:var(--mono); font-size:1rem; padding:9px 12px; border:1px solid #b8ac8e; background:#fbf7ee; width:180px;}
+.answer-row button{background:var(--ink); color:var(--paper); border:none; padding:10px 18px; font-weight:600; font-size:0.85rem;}
+.answer-row button:hover{background:var(--ink-2);}
+.feedback{margin-top:16px; font-size:0.92rem; line-height:1.5; padding:12px 14px; display:none;}
+.feedback.ok{display:block; background:rgba(47,111,99,0.12); border-left:3px solid var(--teal); color:#1e4a41;}
+.feedback.ko{display:block; background:rgba(166,66,61,0.1); border-left:3px solid var(--brick); color:#7a2e2a;}
+.feedback .correction{font-family:var(--mono); font-size:0.82rem; margin-top:6px; opacity:0.85;}
+
+.ex-help{margin-top:16px;}
+.ex-help summary{font-family:var(--mono); font-size:0.78rem; color:var(--teal); cursor:pointer; letter-spacing:0.02em;}
+.ex-help summary:hover{color:#3a897b;}
+.ex-help .fiche-body{margin-top:10px; padding:12px 14px; background:rgba(47,111,99,0.08); border-left:3px solid var(--teal);}
+.ex-help .fiche-body ul{list-style:none; padding:0;}
+.ex-help .fiche-body li{font-size:0.85rem; line-height:1.5; margin-bottom:5px; font-family:var(--mono);}
+
+.fiche-card{background:var(--paper); color:var(--ink); padding:20px 22px; margin-bottom:16px;}
+.fiche-card h3{font-family:var(--serif); font-weight:600; font-size:1.1rem; color:var(--ink); border-bottom:1px solid #c9bb96; padding-bottom:8px; margin-bottom:10px;}
+.fiche-card ul{list-style:none; padding:0;}
+.fiche-card li{font-family:var(--mono); font-size:0.86rem; line-height:1.6; margin-bottom:6px; padding-left:14px; position:relative;}
+.fiche-card li::before{content:"·"; position:absolute; left:0; color:var(--gold);}
+
+/* ---- Lectures ---- */
+.lect-toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
+.lect-add-btn{background:var(--gold); color:var(--ink); border:none; padding:9px 18px; font-weight:600; font-size:0.85rem;}
+.lect-add-btn:hover{background:var(--gold-bright);}
+.lect-filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;}
+.lect-search{background:var(--ink-2); border:1px solid rgba(237,231,216,0.25); color:var(--text-on-ink); padding:8px 12px; font-family:var(--sans); font-size:0.85rem; flex:1; min-width:160px;}
+.lect-search::placeholder{color:var(--text-dim);}
+
+.lect-form{background:var(--paper); color:var(--ink); padding:20px 22px; margin-bottom:20px; display:none;}
+.lect-form.open{display:block;}
+.lect-form h3{font-family:var(--serif); font-size:1.1rem; margin-bottom:14px;}
+.lect-form .row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+.lect-form label{display:flex; flex-direction:column; font-family:var(--mono); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em; color:#5a5240; gap:4px; flex:1; min-width:140px;}
+.lect-form input, .lect-form select, .lect-form textarea{font-family:var(--sans); font-size:0.9rem; padding:8px 10px; border:1px solid #b8ac8e; background:#fbf7ee; color:var(--ink);}
+.lect-form textarea{resize:vertical; min-height:56px;}
+.lect-form .form-actions{display:flex; gap:10px; margin-top:6px;}
+.lect-form .form-actions button{border:none; padding:9px 18px; font-weight:600; font-size:0.85rem;}
+.lect-form .save-btn{background:var(--teal); color:var(--text-on-ink);}
+.lect-form .save-btn:hover{background:#3a897b;}
+.lect-form .cancel-btn{background:none; color:#6b6350; border:1px solid #b8ac8e !important;}
+
+.lect-list{display:flex; flex-direction:column; gap:12px;}
+.lect-card{background:var(--paper); color:var(--ink); padding:16px 20px;}
+.lect-card .top-row{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;}
+.lect-card h4{font-family:var(--serif); font-weight:600; font-size:1.05rem; line-height:1.3;}
+.lect-card .meta{font-family:var(--mono); font-size:0.75rem; color:#6b6350; margin-top:3px;}
+.lect-card .these{font-size:0.88rem; line-height:1.5; margin-top:8px; color:#2b2b2b;}
+.lect-card .tags{margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;}
+.lect-card .tag{font-family:var(--mono); font-size:0.7rem; background:rgba(184,134,43,0.15); color:#8a6420; padding:2px 8px; border-radius:10px;}
+.lect-card .card-actions{display:flex; gap:8px; margin-top:10px;}
+.lect-card .card-actions button{font-family:var(--mono); font-size:0.72rem; background:none; border:1px solid #b8ac8e; color:#6b6350; padding:5px 10px;}
+.lect-card .card-actions button:hover{background:#e8dcc0;}
+.lect-card .card-actions button.danger{color:var(--brick); border-color:var(--brick);}
+
+.badge{font-family:var(--mono); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.04em; padding:3px 9px; border-radius:2px; font-weight:600; white-space:nowrap;}
+.badge.disc-economie{background:rgba(47,111,99,0.15); color:var(--teal);}
+.badge.disc-sociologie{background:rgba(166,66,61,0.12); color:var(--brick);}
+.badge.disc-histoire{background:rgba(184,134,43,0.15); color:#8a6420;}
+.badge.stat-a-lire{background:#e4e4e4; color:#666;}
+.badge.stat-en-cours{background:rgba(184,134,43,0.2); color:#8a6420;}
+.badge.stat-lu{background:rgba(47,111,99,0.18); color:var(--teal);}
+.badge.stat-a-reviser{background:rgba(166,66,61,0.15); color:var(--brick);}
+
+.bulk-toggle{background:none; border:1px solid rgba(237,231,216,0.3); color:var(--text-dim); padding:9px 16px; font-family:var(--mono); font-size:0.8rem; margin-bottom:16px;}
+.bulk-toggle:hover{color:var(--paper);}
+.bulk-panel{background:var(--paper); color:var(--ink); padding:20px 22px; margin-bottom:20px; display:none;}
+.bulk-panel.open{display:block;}
+.bulk-panel h3{font-family:var(--serif); font-size:1.1rem; margin-bottom:6px;}
+.bulk-panel .hint{font-family:var(--mono); font-size:0.76rem; color:#6b6350; margin-bottom:14px; line-height:1.5;}
+.bulk-panel textarea{width:100%; min-height:160px; font-family:var(--mono); font-size:0.82rem; padding:10px; border:1px solid #b8ac8e; background:#fbf7ee; color:var(--ink); resize:vertical;}
+.bulk-panel .row{display:flex; gap:10px; flex-wrap:wrap; margin:12px 0;}
+.bulk-panel select{font-family:var(--sans); font-size:0.85rem; padding:8px 10px; border:1px solid #b8ac8e; background:#fbf7ee; color:var(--ink); flex:1; min-width:160px;}
+.bulk-panel .bulk-actions{display:flex; gap:10px;}
+.bulk-panel .bulk-actions button{border:none; padding:9px 18px; font-weight:600; font-size:0.85rem;}
+.bulk-preview-btn{background:var(--gold); color:var(--ink);}
+.bulk-preview-btn:hover{background:var(--gold-bright);}
+.bulk-confirm-btn{background:var(--teal); color:var(--text-on-ink); display:none;}
+.bulk-confirm-btn:hover{background:#3a897b;}
+.bulk-preview-list{margin-top:14px; max-height:260px; overflow-y:auto; border-top:1px solid #c9bb96; padding-top:10px; display:none;}
+.bulk-preview-list .bp-item{display:flex; gap:8px; align-items:flex-start; padding:6px 0; border-bottom:1px solid rgba(184,134,43,0.15); font-size:0.82rem;}
+.bulk-preview-list .bp-item input[type=checkbox]{margin-top:3px;}
+.bulk-preview-list .bp-text{flex:1; line-height:1.4;}
+.bulk-count{font-family:var(--mono); font-size:0.76rem; color:#6b6350; margin-top:8px;}
+
+.lect-form-footer{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:8px; padding-top:16px; border-top:1px solid rgba(237,231,216,0.15);}
+.lect-form-footer span{font-family:var(--mono); font-size:0.82rem; color:var(--text-dim);}
+.lect-goto-biblio{background:none; border:1px solid var(--gold); color:var(--gold-bright); padding:9px 16px; font-family:var(--mono); font-size:0.8rem;}
+.lect-goto-biblio:hover{background:rgba(184,134,43,0.1);}
+
+.biblio-level{margin-bottom:14px;}
+.biblio-label{font-family:var(--mono); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-bottom:6px;}
+.chip .count{opacity:0.65; margin-left:4px;}
+
+@media (max-width:560px){
+  .answer-row input{width:100%;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <div class="wordmark">É<span>C</span>ART</div>
+    <div class="tagline">l'actu économique, et l'écart-type qui va avec</div>
+  </header>
+
+  <div class="ticker-wrap"><div class="ticker" id="ticker"></div></div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="journal">Journal</button>
+    <button class="tab" data-tab="carnet">Carnet d'exercices</button>
+    <button class="tab" data-tab="fiches">Fiches méthode</button>
+    <button class="tab" data-tab="lectures">Lectures</button>
+    <button class="tab" data-tab="biblio">Bibliothèque</button>
+  </nav>
+
+  <main>
+    <section id="journal" class="panel active">
+      <div class="journal-head">
+        <h2>Actualité économique</h2>
+        <button class="refresh-btn" id="refreshBtn">Actualiser</button>
+      </div>
+      <div class="journal-status" id="journalStatus"></div>
+      <div class="news-list" id="newsList">
+        <div class="empty-state">Clique sur « Actualiser » pour charger les dernières actualités (France, Europe, international).</div>
+      </div>
+    </section>
+
+    <section id="carnet" class="panel">
+      <div class="chips" id="chips"></div>
+      <div class="carnet-toolbar">
+        <button class="new-ex-btn" id="newExBtn">Nouvel exercice</button>
+        <div class="score" id="scoreBox">Score : <b>0</b> / 0 · série : <b>0</b></div>
+      </div>
+      <div class="ex-card" id="exCard">
+        <div class="empty-state" style="border:none;">Choisis une catégorie (ou laisse « Toutes ») puis clique sur « Nouvel exercice ».</div>
+      </div>
+    </section>
+
+    <section id="fiches" class="panel">
+      <div id="fichesList"></div>
+    </section>
+
+    <section id="lectures" class="panel">
+      <div class="lect-toolbar">
+        <h2 style="font-family:var(--serif); font-weight:600; font-size:1.4rem; color:var(--paper);">Fiches de lecture</h2>
+        <div style="display:flex; gap:8px;">
+          <button class="bulk-toggle" id="bulkToggleBtn">Importer une bibliographie</button>
+          <button class="lect-add-btn" id="lectAddBtn">+ Nouvelle fiche</button>
+        </div>
+      </div>
+
+      <div class="bulk-panel" id="bulkPanel">
+        <h3>Import en masse</h3>
+        <div class="hint">Colle un bloc de bibliographie ci-dessous (une référence par ligne ou par paragraphe — copie-la directement depuis le PDF du programme pour de meilleurs résultats). Choisis la discipline et le thème, puis clique sur « Prévisualiser » : chaque ligne non vide devient une fiche (titre = la référence complète), que tu peux décocher avant import si le découpage a mal coupé une ligne.</div>
+        <div class="row">
+          <select id="bulkDiscipline"><option>Économie</option><option>Sociologie</option><option>Histoire</option></select>
+          <select id="bulkTheme">
+            <option>Analyse économique du Droit</option>
+            <option>Libre-échange et protectionnisme</option>
+            <option>Choix publics et économie politique</option>
+            <option>Religions : pratiques, appartenances, pouvoir</option>
+            <option>Diversité des origines : inégalités et méthodes d'enquêtes</option>
+            <option>Le travail aujourd'hui</option>
+            <option>La France, métropole impériale</option>
+            <option>Ouvriers et désindustrialisation en Europe occidentale</option>
+            <option>Autre / à préciser</option>
+          </select>
+        </div>
+        <textarea id="bulkText" placeholder="Colle ici la bibliographie (une référence par ligne)…"></textarea>
+        <div class="bulk-actions">
+          <button class="bulk-preview-btn" id="bulkPreviewBtn">Prévisualiser</button>
+          <button class="bulk-confirm-btn" id="bulkConfirmBtn">Importer les fiches cochées</button>
+        </div>
+        <div class="bulk-count" id="bulkCount"></div>
+        <div class="bulk-preview-list" id="bulkPreviewList"></div>
+      </div>
+
+      <div class="lect-form" id="lectForm">
+        <h3 id="lectFormTitle">Nouvelle fiche</h3>
+        <input type="hidden" id="lectId">
+        <div class="row">
+          <label>Titre<input type="text" id="lectTitre" placeholder="Titre de l'article/ouvrage"></label>
+          <label>Auteur<input type="text" id="lectAuteur" placeholder="Nom de l'auteur"></label>
+          <label>Année<input type="text" id="lectAnnee" placeholder="ex : 1979"></label>
+        </div>
+        <div class="row">
+          <label>Type
+            <select id="lectType"><option>Article</option><option>Ouvrage</option><option>Chapitre</option><option>Rapport</option></select>
+          </label>
+          <label>Discipline
+            <select id="lectDiscipline"><option>Économie</option><option>Sociologie</option><option>Histoire</option></select>
+          </label>
+          <label>Statut
+            <select id="lectStatut"><option>À lire</option><option>En cours</option><option>Lu</option><option>À réviser</option></select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Thème(s) / notions<input type="text" id="lectTheme" placeholder="ex : croissance, innovation, régulation"></label>
+        </div>
+        <div class="row">
+          <label style="flex:1 1 100%;">Thèse principale / résumé<textarea id="lectThese" placeholder="En 2-3 phrases : l'argument central du texte"></textarea></label>
+        </div>
+        <div class="row">
+          <label style="flex:1 1 100%;">Concepts clés (séparés par des virgules)<input type="text" id="lectConcepts" placeholder="ex : destruction créatrice, rente technologique"></label>
+        </div>
+        <div class="form-actions">
+          <button class="save-btn" id="lectSaveBtn">Enregistrer</button>
+          <button class="cancel-btn" id="lectCancelBtn">Annuler</button>
+        </div>
+      </div>
+
+      <div class="lect-form-footer">
+        <span id="lectAddedSummary">Aucune fiche pour l'instant.</span>
+        <button class="lect-goto-biblio" id="gotoBiblioBtn">Voir la bibliothèque →</button>
+      </div>
+    </section>
+
+    <section id="biblio" class="panel">
+      <h2 style="font-family:var(--serif); font-weight:600; font-size:1.4rem; color:var(--paper); margin-bottom:16px;">Bibliothèque</h2>
+
+      <div class="biblio-level">
+        <div class="biblio-label">Discipline</div>
+        <div class="lect-filters" id="biblioDiscChips"></div>
+      </div>
+      <div class="biblio-level">
+        <div class="biblio-label">Thème</div>
+        <div class="lect-filters" id="biblioThemeChips"></div>
+      </div>
+      <div class="biblio-level">
+        <div class="biblio-label">Statut</div>
+        <div class="lect-filters" id="biblioStatChips"></div>
+      </div>
+
+      <div class="lect-filters">
+        <input type="text" class="lect-search" id="biblioSearch" placeholder="Rechercher un titre, un auteur…">
+      </div>
+
+      <div class="lect-list" id="biblioList"></div>
+    </section>
+  </main>
+
+</div>
+
+<script>
+/* ---------------- Ticker ---------------- */
+const tickerItems = [
+  {t:"CAC 40 ▲ 0,4%", c:"up"}, {t:"π ≈ 3,14159…", c:"math"},
+  {t:"BCE : taux inchangés", c:""}, {t:"∫₀¹ x² dx = 1/3", c:"math"},
+  {t:"S&P 500 ▼ 0,2%", c:"down"}, {t:"e ≈ 2,71828…", c:"math"},
+  {t:"Bund allemand 10 ans", c:""}, {t:"Var(X) = E[X²] − E[X]²", c:"math"},
+  {t:"Nikkei ▲ 0,7%", c:"up"}, {t:"loi normale : 68-95-99,7", c:"math"},
+  {t:"Inflation zone euro", c:""}, {t:"Σ 1/2ⁿ = 2", c:"math"},
+];
+const tickerEl = document.getElementById('ticker');
+function buildTicker(){
+  const html = tickerItems.map(i=>`<span class="item ${i.c}">${i.t}</span>`).join('·');
+  tickerEl.innerHTML = html + '·' + html;
+}
+buildTicker();
+
+/* ---------------- Tabs ---------------- */
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------------- Journal ---------------- */
+const refreshBtn = document.getElementById('refreshBtn');
+const journalStatus = document.getElementById('journalStatus');
+const newsList = document.getElementById('newsList');
+
+refreshBtn.addEventListener('click', fetchNews);
+
+async function fetchNews(){
+  refreshBtn.disabled = true;
+  journalStatus.textContent = "Recherche des dernières actualités…";
+  newsList.innerHTML = '';
+  try{
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1500,
+        messages: [{
+          role: "user",
+          content: "Donne-moi 6 actualités économiques récentes et significatives, en mélangeant France, Europe et international (marchés, banques centrales, entreprises, indicateurs macroéconomiques). Réponds UNIQUEMENT avec un tableau JSON valide, sans aucun texte autour, sans balises markdown, sans clé englobante. Format de chaque élément : {\"titre\": string, \"zone\": \"France\" | \"Europe\" | \"Monde\", \"resume\": string (2 phrases maximum, en français), \"source\": string (nom du média)}."
+        }],
+        tools: [{type: "web_search_20250305", name: "web_search"}]
+      })
+    });
+
+    if(!res.ok){
+      throw new Error("Réponse HTTP " + res.status);
+    }
+
+    const data = await res.json();
+    const text = (data.content || [])
+      .filter(b => b.type === "text")
+      .map(b => b.text)
+      .join("\n");
+
+    const clean = text.replace(/```json|```/g, "").trim();
+    const items = JSON.parse(clean);
+
+    renderNews(items);
+    journalStatus.textContent = "Mis à jour à " + new Date().toLocaleTimeString('fr-FR');
+  } catch(err){
+    console.error(err);
+    journalStatus.textContent = "Impossible de charger l'actualité pour le moment.";
+    newsList.innerHTML = '<div class="empty-state">Réessaie dans un instant — la recherche a échoué ou la réponse n\'a pas pu être lue.</div>';
+  } finally {
+    refreshBtn.disabled = false;
+  }
+}
+
+function renderNews(items){
+  if(!Array.isArray(items) || items.length === 0){
+    newsList.innerHTML = '<div class="empty-state">Aucune actualité trouvée.</div>';
+    return;
+  }
+  newsList.innerHTML = items.map(it => `
+    <div class="news-card zone-${escapeHtml(it.zone||'')}">
+      <span class="zone">${escapeHtml(it.zone||'—')}</span>
+      <h3>${escapeHtml(it.titre||'')}</h3>
+      <p>${escapeHtml(it.resume||'')}</p>
+      <span class="src">${escapeHtml(it.source||'')}</span>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- Carnet d'exercices ---------------- */
+
+function randInt(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function randChoice(arr){ return arr[randInt(0, arr.length-1)]; }
+function fmt(n, d=2){
+  const r = Math.round(n * Math.pow(10,d)) / Math.pow(10,d);
+  return r.toString().replace('.', ',');
+}
+function nonZero(min,max){ let v=0; while(v===0){ v = randInt(min,max); } return v; }
+function factorial(n){ let f=1; for(let i=2;i<=n;i++) f*=i; return f; }
+function binom(n,k){ return factorial(n)/(factorial(k)*factorial(n-k)); }
+
+const generators = {
+
+  "Probabilités": [
+    // Loi binomiale
+    function(){
+      const n = randInt(6,12), p = randChoice([0.2,0.25,0.3,0.4,0.5,0.6]), k = randInt(1,n-1);
+      const proba = binom(n,k) * Math.pow(p,k) * Math.pow(1-p, n-k);
+      return {
+        question: `Soit X ~ 𝓑(n=${n}, p=${fmt(p,2)}). Calculer P(X = ${k}), arrondi à 4 décimales.`,
+        answer: proba, tol: 0.0005,
+        explain: `P(X=${k}) = C(${n},${k})·${fmt(p,2)}^${k}·${fmt(1-p,2)}^${n-k} = ${fmt(proba,4)}`
+      };
+    },
+    // Espérance / variance discrète
+    function(){
+      const vals = [randInt(-4,-1), 0, randInt(1,4), randInt(5,8)];
+      const denom = 10;
+      let probs = [randInt(1,3), randInt(1,3), randInt(1,3)];
+      probs.push(denom - probs.reduce((a,b)=>a+b,0));
+      if(probs[3] <= 0){ probs = [2,3,2,3]; }
+      const p = probs.map(x=>x/denom);
+      const E = vals.reduce((s,v,i)=>s+v*p[i],0);
+      const E2 = vals.reduce((s,v,i)=>s+v*v*p[i],0);
+      const V = E2 - E*E;
+      const askVar = Math.random() < 0.5;
+      const support = vals.map((v,i)=>`P(X=${v})=${p[i]}`).join(', ');
+      return {
+        question: `X est une variable discrète : ${support}. Calculer ${askVar ? "Var(X)" : "E[X]"} (2 décimales).`,
+        answer: askVar ? V : E, tol: 0.02,
+        explain: `E[X] = Σ x·P(X=x) = ${fmt(E,3)} ; Var(X) = E[X²] − E[X]² = ${fmt(V,3)}`
+      };
+    }
+  ],
+
+  "Statistiques": [
+    // Intervalle de confiance
+    function(){
+      const s = randInt(2,10), n = randChoice([25,36,49,64,100]);
+      const marge = 1.96 * s / Math.sqrt(n);
+      return {
+        question: `Un échantillon de taille n=${n} a un écart-type s=${s}. Calculer la demi-largeur de l'intervalle de confiance à 95% pour la moyenne (z=1,96), arrondie à 3 décimales.`,
+        answer: marge, tol: 0.005,
+        explain: `marge = z·s/√n = 1,96 × ${s}/√${n} = ${fmt(marge,3)}`
+      };
+    },
+    // Test sur une proportion (statistique Z)
+    function(){
+      const p0 = randChoice([0.3,0.4,0.5,0.6]), n = randChoice([50,80,100,150]);
+      const phat = Math.round((p0 + randChoice([-0.08,-0.05,0.05,0.08]))*100)/100;
+      const z = (phat - p0) / Math.sqrt(p0*(1-p0)/n);
+      return {
+        question: `On teste H0: p=${fmt(p0,2)} contre une proportion observée p̂=${fmt(phat,2)} sur un échantillon de taille n=${n}. Calculer la statistique Z, arrondie à 2 décimales.`,
+        answer: z, tol: 0.03,
+        explain: `Z = (p̂−p0)/√(p0(1−p0)/n) = (${fmt(phat,2)}−${fmt(p0,2)})/√(${fmt(p0,2)}×${fmt(1-p0,2)}/${n}) = ${fmt(z,2)}`
+      };
+    }
+  ],
+
+  "Algèbre linéaire": [
+    // Déterminant 2x2
+    function(){
+      const a=randInt(-5,5), b=randInt(-5,5), c=randInt(-5,5), d=randInt(-5,5);
+      const det = a*d - b*c;
+      return {
+        question: `Calculer le déterminant de la matrice [[${a}, ${b}], [${c}, ${d}]].`,
+        answer: det, tol: 0,
+        explain: `det = ad − bc = ${a}×${d} − ${b}×${c} = ${det}`
+      };
+    },
+    // Trace et déterminant -> plus grande valeur propre (2x2 réelle)
+    function(){
+      const l1 = randInt(-4,4), l2 = randInt(-4,4);
+      const tr = l1+l2, det = l1*l2;
+      const bigger = Math.max(l1,l2);
+      return {
+        question: `Une matrice 2×2 a pour trace ${tr} et déterminant ${det}. Calculer sa plus grande valeur propre (les deux sont réelles).`,
+        answer: bigger, tol: 0.01,
+        explain: `λ vérifie λ² − ${tr}λ + ${det} = 0 → λ = ${l1} ou λ = ${l2}`
+      };
+    }
+  ],
+
+  "Analyse": [
+    // Limite de suite rationnelle
+    function(){
+      const a=nonZero(-5,5), c=nonZero(-5,5), b=randInt(-5,5), d=randInt(-5,5);
+      const limit = a/c;
+      return {
+        question: `Calculer la limite quand n→∞ de uₙ = (${a}n + ${b}) / (${c}n + ${d}), arrondie à 3 décimales si besoin.`,
+        answer: limit, tol: 0.001,
+        explain: `Terme dominant : ${a}n/${c}n → ${fmt(limit,3)}`
+      };
+    },
+    // Dérivée en un point
+    function(){
+      const a=randInt(1,4), b=randInt(-4,4), c=randInt(-5,5), x0=randInt(-3,3);
+      const deriv = 3*a*x0*x0 + 2*b*x0 + c;
+      return {
+        question: `Soit f(x) = ${a}x³ + ${b}x² + ${c}x. Calculer f'(${x0}).`,
+        answer: deriv, tol: 0,
+        explain: `f'(x) = ${3*a}x² + ${2*b}x + ${c} → f'(${x0}) = ${deriv}`
+      };
+    },
+    // Somme de série géométrique
+    function(){
+      const a = randInt(1,6), rNum = randChoice([1,2,3]), rDen = randChoice([4,5,6]);
+      const r = rNum/rDen;
+      const sum = a/(1-r);
+      return {
+        question: `Calculer la somme S = Σ (k=0 → ∞) ${a}×(${rNum}/${rDen})^k, arrondie à 3 décimales.`,
+        answer: sum, tol: 0.005,
+        explain: `S = a/(1−r) = ${a}/(1−${fmt(r,3)}) = ${fmt(sum,3)}`
+      };
+    }
+  ],
+
+  "Suites & récurrence": [
+    // Suite arithmético-géométrique : limite
+    function(){
+      const aNum = randChoice([1,2,3]), aDen = randChoice([4,5,6]);
+      const a = aNum/aDen;
+      const b = randInt(-6,6) || 1;
+      const limit = b/(1-a);
+      return {
+        question: `Soit (uₙ) définie par uₙ₊₁ = (${aNum}/${aDen})·uₙ + ${b}. Calculer sa limite ℓ (arrondie à 3 décimales), sachant que |a|<1.`,
+        answer: limit, tol: 0.01,
+        explain: `ℓ vérifie ℓ = a·ℓ + b → ℓ = b/(1−a) = ${b}/(1−${fmt(a,3)}) = ${fmt(limit,3)}`
+      };
+    }
+  ],
+
+  "Microéconomie": [
+    // Élasticité-prix de la demande (fonction linéaire)
+    function(){
+      const a = randInt(80,150), b = randInt(2,6), P0 = randInt(5,15);
+      const Q0 = a - b*P0;
+      const elast = -b * P0 / Q0;
+      return {
+        question: `La demande est Qd = ${a} − ${b}P. Calculer l'élasticité-prix de la demande au point P=${P0} (E = (dQ/dP)·(P/Q)), arrondie à 2 décimales.`,
+        answer: elast, tol: 0.02,
+        explain: `dQ/dP = −${b} ; Q(${P0}) = ${a} − ${b}×${P0} = ${Q0} ; E = −${b}×${P0}/${Q0} = ${fmt(elast,2)}`
+      };
+    },
+    // Choix optimal du consommateur (Cobb-Douglas)
+    function(){
+      const alphaNum = randChoice([1,2,3]), alphaDen = 10;
+      const alpha = (alphaNum*3)/alphaDen; // ex: 0.3, 0.6, 0.9 -> garder simple
+      const alphaSimple = randChoice([0.2,0.3,0.4,0.5,0.6,0.7,0.8]);
+      const R = randInt(100,400), Px = randInt(2,10);
+      const xOpt = alphaSimple * R / Px;
+      return {
+        question: `Un consommateur a une fonction d'utilité U(x,y) = xᵅyᵝ (avec β=1−α), un revenu R=${R}, et un prix Px=${Px}. Avec α=${fmt(alphaSimple,1)}, calculer la quantité optimale x* = α·R/Px, arrondie à 2 décimales.`,
+        answer: xOpt, tol: 0.05,
+        explain: `x* = α·R/Px = ${fmt(alphaSimple,1)}×${R}/${Px} = ${fmt(xOpt,2)}`
+      };
+    },
+    // Coût marginal
+    function(){
+      const a = randChoice([1,2,3]), b = randInt(2,10), c = randInt(10,50), Q0 = randInt(3,10);
+      const Cm = 2*a*Q0 + b;
+      return {
+        question: `Le coût total est CT(Q) = ${a}Q² + ${b}Q + ${c}. Calculer le coût marginal Cm(${Q0}) = CT'(${Q0}).`,
+        answer: Cm, tol: 0.01,
+        explain: `CT'(Q) = ${2*a}Q + ${b} → Cm(${Q0}) = ${2*a}×${Q0} + ${b} = ${Cm}`
+      };
+    },
+    // Équilibre offre-demande linéaire
+    function(){
+      const a = randInt(80,200), b = randInt(2,6), c = randInt(10,60), d = randInt(2,6);
+      const Pstar = (a+c)/(b+d);
+      return {
+        question: `Demande : Qd = ${a} − ${b}P. Offre : Qs = −${c} + ${d}P. Calculer le prix d'équilibre P*, arrondi à 2 décimales.`,
+        answer: Pstar, tol: 0.02,
+        explain: `${a} − ${b}P = −${c} + ${d}P → P* = (${a}+${c})/(${b}+${d}) = ${fmt(Pstar,2)}`
+      };
+    },
+    // Monopole : quantité maximisant le profit
+    function(){
+      const a = randInt(50,150), b = randInt(2,6), cCost = randInt(5,30);
+      const Qstar = (a - cCost) / (2*b);
+      return {
+        question: `Un monopole fait face à la demande inverse P = ${a} − ${b}Q, avec un coût marginal constant Cm=${cCost}. Calculer la quantité Q* qui maximise le profit (Rm=Cm), arrondie à 2 décimales.`,
+        answer: Qstar, tol: 0.02,
+        explain: `Rm = ${a} − ${2*b}Q ; Rm=Cm → ${a} − ${2*b}Q = ${cCost} → Q* = (${a}−${cCost})/${2*b} = ${fmt(Qstar,2)}`
+      };
+    }
+  ],
+
+  "Sociologie": [
+    // Test du χ² sur un tableau de contingence 2x2
+    function(){
+      const a = randInt(20,80), b = randInt(20,80), c = randInt(20,80), d = randInt(20,80);
+      const r1 = a+b, r2 = c+d, k1 = a+c, k2 = b+d, N = r1+r2;
+      const E11 = r1*k1/N, E12 = r1*k2/N, E21 = r2*k1/N, E22 = r2*k2/N;
+      const chi2 = Math.pow(a-E11,2)/E11 + Math.pow(b-E12,2)/E12 + Math.pow(c-E21,2)/E21 + Math.pow(d-E22,2)/E22;
+      return {
+        question: `Tableau croisé (diplôme des parents × diplôme de l'enfant) : a=${a}, b=${b}, c=${c}, d=${d} (effectifs des 4 cases, lignes puis colonnes). Calculer la statistique du χ², arrondie à 2 décimales.`,
+        answer: chi2, tol: 0.1,
+        explain: `Effectifs théoriques : E = (total ligne × total colonne)/N. χ² = Σ (O−E)²/E = ${fmt(chi2,2)}`
+      };
+    },
+    // Lecture de tableau croisé : pourcentage en ligne
+    function(){
+      const a = randInt(20,100), b = randInt(20,100);
+      const total = a+b;
+      const pct = a/total*100;
+      return {
+        question: `Sur une ligne d'un tableau croisé, on compte ${a} individus dans la catégorie A et ${b} dans la catégorie B (total de la ligne = ${total}). Calculer le pourcentage en ligne de la catégorie A, arrondi à 1 décimale.`,
+        answer: pct, tol: 0.1,
+        explain: `% ligne = (effectif de la case / total de la ligne) × 100 = ${a}/${total} × 100 = ${fmt(pct,1)}%`
+      };
+    },
+    // Odds ratio sur une table de mobilité 2x2
+    function(){
+      const a = randInt(10,60), b = randInt(10,60), c = randInt(10,60), d = randInt(10,60);
+      const OR = (a*d)/(b*c);
+      return {
+        question: `Table de mobilité sociale 2×2 : a=${a}, b=${b}, c=${c}, d=${d} (effectifs des 4 cases). Calculer l'odds ratio OR = (a×d)/(b×c), arrondi à 2 décimales.`,
+        answer: OR, tol: 0.03,
+        explain: `OR = (${a}×${d})/(${b}×${c}) = ${fmt(OR,2)}. OR>1 : association positive ; OR<1 : association négative ; OR=1 : indépendance.`
+      };
+    }
+  ]
+};
+
+const fiches = {
+  "Probabilités": [
+    "Loi binomiale X~𝓑(n,p) : P(X=k) = C(n,k)·pᵏ·(1−p)ⁿ⁻ᵏ",
+    "Espérance et variance de 𝓑(n,p) : E[X]=np ; V[X]=np(1−p)",
+    "Variable discrète : E[X] = Σ x·P(X=x) ; V[X] = E[X²] − E[X]²",
+    "Loi normale (règle 68-95-99,7) : standardisation Z = (X−μ)/σ"
+  ],
+  "Statistiques": [
+    "Intervalle de confiance à 95% pour une moyenne : x̄ ± 1,96·s/√n",
+    "Test sur une proportion : Z = (p̂−p0)/√(p0(1−p0)/n)",
+    "Rejet de H0 au seuil 5% (bilatéral) si |Z| > 1,96",
+    "Covariance et corrélation : Cov(X,Y)=E[XY]−E[X]E[Y] ; r = Cov(X,Y)/(σx·σy)"
+  ],
+  "Algèbre linéaire": [
+    "Déterminant 2×2 : det[[a,b],[c,d]] = ad − bc",
+    "Déterminant 3×3 : règle de Sarrus",
+    "Valeurs propres 2×2 : λ² − tr(A)·λ + det(A) = 0",
+    "tr(A) = somme des valeurs propres ; det(A) = produit des valeurs propres"
+  ],
+  "Analyse": [
+    "Limite d'une fraction rationnelle : ne garder que les termes de plus haut degré",
+    "Dérivées usuelles : (xⁿ)' = n·xⁿ⁻¹ ; (uv)' = u'v+uv' ; (u/v)' = (u'v−uv')/v²",
+    "Primitive de xⁿ (n≠−1) : xⁿ⁺¹/(n+1)",
+    "Série géométrique : Σ (k=0→∞) a·rᵏ = a/(1−r) si |r| < 1"
+  ],
+  "Suites & récurrence": [
+    "Suite arithmético-géométrique uₙ₊₁ = a·uₙ + b : point fixe ℓ = b/(1−a)",
+    "Si |a| < 1, la suite converge vers ℓ ; sinon elle diverge (sauf cas particuliers)",
+    "uₙ − ℓ = aⁿ·(u₀ − ℓ) : formule explicite du terme général"
+  ],
+  "Microéconomie": [
+    "Élasticité-prix de la demande : E = (dQ/dP)·(P/Q). Demande élastique si |E|>1",
+    "Cobb-Douglas U(x,y)=xᵅyᵝ (α+β=1) sous contrainte Px·x+Py·y=R : x*=α·R/Px ; y*=β·R/Py",
+    "Coût marginal Cm(Q) = CT'(Q) ; coût moyen CM(Q) = CT(Q)/Q",
+    "Équilibre de marché : Qd(P) = Qs(P), résoudre pour P* puis Q*",
+    "Monopole : profit maximal quand recette marginale Rm = coût marginal Cm",
+    "Surplus du consommateur/producteur : aire entre la courbe et le prix d'équilibre"
+  ],
+  "Sociologie": [
+    "χ² = Σ (Observé−Théorique)²/Théorique ; effectif théorique = (total ligne × total colonne)/N",
+    "Degrés de liberté d'un tableau r×c : (r−1)×(c−1) — à comparer à la table du χ² pour conclure",
+    "% en ligne = effectif de la case / total de la ligne ; % en colonne = effectif / total de la colonne",
+    "Odds ratio (table 2×2) : OR = (a×d)/(b×c) ; OR=1 indépendance, OR>1 association positive, OR<1 négative",
+    "Ne pas confondre corrélation et causalité : une association statistique n'implique pas un lien causal"
+  ]
+};
+
+function renderFiches(){
+  const container = document.getElementById('fichesList');
+  container.innerHTML = Object.entries(fiches).map(([cat, lines]) => `
+    <div class="fiche-card">
+      <h3>${escapeHtml(cat)}</h3>
+      <ul>${lines.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
+    </div>
+  `).join('');
+}
+renderFiches();
+
+const categories = ["Toutes", ...Object.keys(generators)];
+let activeCategory = "Toutes";
+let currentExercise = null;
+let score = {correct:0, total:0, streak:0};
+
+const chipsEl = document.getElementById('chips');
+chipsEl.innerHTML = categories.map(c => `<button class="chip ${c==='Toutes'?'active':''}" data-cat="${c}">${c}</button>`).join('');
+chipsEl.querySelectorAll('.chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    chipsEl.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    activeCategory = chip.dataset.cat;
+  });
+});
+
+document.getElementById('newExBtn').addEventListener('click', newExercise);
+
+function newExercise(){
+  const pool = activeCategory === "Toutes"
+    ? Object.keys(generators)
+    : [activeCategory];
+  const cat = randChoice(pool);
+  const gen = randChoice(generators[cat]);
+  currentExercise = { ...gen(), category: cat };
+  renderExercise();
+}
+
+function renderExercise(){
+  const card = document.getElementById('exCard');
+  card.innerHTML = `
+    <span class="cat-label">${escapeHtml(currentExercise.category)}</span>
+    <div class="question">${escapeHtml(currentExercise.question)}</div>
+    <div class="answer-row">
+      <input type="text" id="answerInput" placeholder="Ta réponse" inputmode="decimal">
+      <button id="checkBtn">Vérifier</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <details class="ex-help">
+      <summary>Voir la fiche méthode — ${escapeHtml(currentExercise.category)}</summary>
+      <div class="fiche-body">
+        <ul>${(fiches[currentExercise.category]||[]).map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
+      </div>
+    </details>
+  `;
+  document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+  document.getElementById('answerInput').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') checkAnswer();
+  });
+  document.getElementById('answerInput').focus();
+}
+
+function checkAnswer(){
+  const raw = document.getElementById('answerInput').value.trim().replace(',', '.');
+  const val = parseFloat(raw);
+  const fb = document.getElementById('feedback');
+  if(isNaN(val)){
+    fb.className = 'feedback ko';
+    fb.textContent = "Entre un nombre pour vérifier ta réponse.";
+    return;
+  }
+  const ok = Math.abs(val - currentExercise.answer) <= Math.max(currentExercise.tol, 0.0001);
+  score.total++;
+  if(ok){ score.correct++; score.streak++; }
+  else { score.streak = 0; }
+  updateScore();
+
+  fb.className = 'feedback ' + (ok ? 'ok' : 'ko');
+  fb.innerHTML = (ok ? "Exact." : `Pas tout à fait — réponse attendue : ${fmt(currentExercise.answer,4)}.`)
+    + `<div class="correction">${escapeHtml(currentExercise.explain)}</div>`;
+}
+
+function updateScore(){
+  document.getElementById('scoreBox').innerHTML =
+    `Score : <b>${score.correct}</b> / ${score.total} · série : <b>${score.streak}</b>`;
+}
+
+/* ---------------- Lectures ---------------- */
+const LECT_KEY = 'lectures-data';
+let lectures = [];
+let lectFilterDisc = 'Toutes';
+let lectFilterTheme = 'Tous';
+let lectFilterStat = 'Toutes';
+let lectEditingId = null;
+
+function slug(s){
+  return s.toLowerCase()
+    .replace(/[éèê]/g,'e').replace(/[à]/g,'a').replace(/[ô]/g,'o').replace(/[î]/g,'i')
+    .replace(/\s+/g,'-');
+}
+
+function switchTab(tabName){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tabName));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id===tabName));
+}
+
+async function loadLectures(){
+  try{
+    const res = await window.storage.get(LECT_KEY, false);
+    lectures = res && res.value ? JSON.parse(res.value) : [];
+  } catch(e){
+    lectures = [];
+  }
+  renderBiblioFilters();
+  renderBiblioList();
+  updateLectSummary();
+}
+
+async function saveLectures(){
+  try{
+    await window.storage.set(LECT_KEY, JSON.stringify(lectures), false);
+  } catch(e){
+    console.error('Erreur de sauvegarde des lectures', e);
+  }
+  updateLectSummary();
+}
+
+function updateLectSummary(){
+  const el = document.getElementById('lectAddedSummary');
+  if(!el) return;
+  el.textContent = lectures.length === 0
+    ? 'Aucune fiche pour l\'instant.'
+    : `${lectures.length} fiche(s) au total.`;
+}
+
+function renderBiblioFilters(){
+  const discs = ['Toutes', ...Array.from(new Set(lectures.map(l=>l.discipline).filter(Boolean))).sort()];
+  document.getElementById('biblioDiscChips').innerHTML = discs.map(d => {
+    const count = d==='Toutes' ? lectures.length : lectures.filter(l=>l.discipline===d).length;
+    return `<button class="chip ${lectFilterDisc===d?'active':''}" data-disc="${d}">${d} <span class="count">${count}</span></button>`;
+  }).join('');
+
+  const scoped = lectFilterDisc==='Toutes' ? lectures : lectures.filter(l=>l.discipline===lectFilterDisc);
+  const themes = ['Tous', ...Array.from(new Set(scoped.map(l=>l.theme).filter(Boolean))).sort()];
+  document.getElementById('biblioThemeChips').innerHTML = themes.map(t => {
+    const count = t==='Tous' ? scoped.length : scoped.filter(l=>l.theme===t).length;
+    return `<button class="chip ${lectFilterTheme===t?'active':''}" data-theme="${escapeHtml(t)}">${escapeHtml(t)} <span class="count">${count}</span></button>`;
+  }).join('');
+
+  const stats = ['Toutes','À lire','En cours','Lu','À réviser'];
+  document.getElementById('biblioStatChips').innerHTML = stats.map(s =>
+    `<button class="chip ${lectFilterStat===s?'active':''}" data-stat="${s}">${s}</button>`
+  ).join('');
+
+  document.querySelectorAll('#biblioDiscChips .chip').forEach(c=>{
+    c.addEventListener('click', ()=>{ lectFilterDisc = c.dataset.disc; lectFilterTheme = 'Tous'; renderBiblioFilters(); renderBiblioList(); });
+  });
+  document.querySelectorAll('#biblioThemeChips .chip').forEach(c=>{
+    c.addEventListener('click', ()=>{ lectFilterTheme = c.dataset.theme; renderBiblioFilters(); renderBiblioList(); });
+  });
+  document.querySelectorAll('#biblioStatChips .chip').forEach(c=>{
+    c.addEventListener('click', ()=>{ lectFilterStat = c.dataset.stat; renderBiblioFilters(); renderBiblioList(); });
+  });
+}
+
+document.getElementById('biblioSearch').addEventListener('input', renderBiblioList);
+document.getElementById('gotoBiblioBtn').addEventListener('click', ()=> switchTab('biblio'));
+
+function renderBiblioList(){
+  const q = document.getElementById('biblioSearch').value.trim().toLowerCase();
+  let items = lectures.filter(l => {
+    if(lectFilterDisc !== 'Toutes' && l.discipline !== lectFilterDisc) return false;
+    if(lectFilterTheme !== 'Tous' && l.theme !== lectFilterTheme) return false;
+    if(lectFilterStat !== 'Toutes' && l.statut !== lectFilterStat) return false;
+    if(q){
+      const hay = (l.titre+' '+l.auteur+' '+l.theme+' '+l.concepts).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  }).sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0));
+
+  const list = document.getElementById('biblioList');
+  if(items.length === 0){
+    list.innerHTML = '<div class="empty-state">Aucune fiche pour ces filtres. Ajoute ou importe des lectures depuis l\'onglet « Lectures ».</div>';
+    return;
+  }
+  list.innerHTML = items.map(l => `
+    <div class="lect-card" data-id="${l.id}">
+      <div class="top-row">
+        <div>
+          <h4>${escapeHtml(l.titre||'(sans titre)')}</h4>
+          <div class="meta">${escapeHtml(l.auteur||'—')}${l.annee ? ' · '+escapeHtml(l.annee) : ''} · ${escapeHtml(l.type||'')}</div>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="badge disc-${slug(l.discipline||'economie')}">${escapeHtml(l.discipline||'')}</span>
+          <span class="badge stat-${slug(l.statut||'a-lire')}">${escapeHtml(l.statut||'')}</span>
+        </div>
+      </div>
+      ${l.theme ? `<div class="meta" style="margin-top:6px;">Thème(s) : ${escapeHtml(l.theme)}</div>` : ''}
+      ${l.these ? `<div class="these">${escapeHtml(l.these)}</div>` : ''}
+      ${l.concepts ? `<div class="tags">${l.concepts.split(',').map(c=>c.trim()).filter(Boolean).map(c=>`<span class="tag">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+      <div class="card-actions">
+        <button class="edit-btn" data-id="${l.id}">Modifier</button>
+        <button class="danger del-btn" data-id="${l.id}">Supprimer</button>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', ()=> openLectForm(b.dataset.id)));
+  list.querySelectorAll('.del-btn').forEach(b => b.addEventListener('click', ()=> handleDelete(b)));
+}
+
+function handleDelete(btn){
+  if(btn.dataset.confirm !== '1'){
+    btn.dataset.confirm = '1';
+    btn.textContent = 'Confirmer ?';
+    setTimeout(()=>{ btn.dataset.confirm = '0'; btn.textContent = 'Supprimer'; }, 3000);
+    return;
+  }
+  const id = btn.dataset.id;
+  lectures = lectures.filter(l => l.id !== id);
+  saveLectures();
+  renderBiblioFilters();
+  renderBiblioList();
+}
+
+const lectFormEl = document.getElementById('lectForm');
+document.getElementById('lectAddBtn').addEventListener('click', ()=> openLectForm(null));
+document.getElementById('lectCancelBtn').addEventListener('click', closeLectForm);
+document.getElementById('lectSaveBtn').addEventListener('click', saveLectForm);
+
+function openLectForm(id){
+  switchTab('lectures');
+  lectEditingId = id;
+  const l = id ? lectures.find(x=>x.id===id) : null;
+  document.getElementById('lectFormTitle').textContent = l ? 'Modifier la fiche' : 'Nouvelle fiche';
+  document.getElementById('lectId').value = l ? l.id : '';
+  document.getElementById('lectTitre').value = l ? l.titre : '';
+  document.getElementById('lectAuteur').value = l ? l.auteur : '';
+  document.getElementById('lectAnnee').value = l ? l.annee : '';
+  document.getElementById('lectType').value = l ? l.type : 'Article';
+  document.getElementById('lectDiscipline').value = l ? l.discipline : 'Économie';
+  document.getElementById('lectStatut').value = l ? l.statut : 'À lire';
+  document.getElementById('lectTheme').value = l ? l.theme : '';
+  document.getElementById('lectThese').value = l ? l.these : '';
+  document.getElementById('lectConcepts').value = l ? l.concepts : '';
+  lectFormEl.classList.add('open');
+  document.getElementById('lectTitre').focus();
+  lectFormEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function closeLectForm(){
+  lectFormEl.classList.remove('open');
+  lectEditingId = null;
+}
+
+function saveLectForm(){
+  const titre = document.getElementById('lectTitre').value.trim();
+  if(!titre){
+    document.getElementById('lectTitre').focus();
+    return;
+  }
+  const data = {
+    titre,
+    auteur: document.getElementById('lectAuteur').value.trim(),
+    annee: document.getElementById('lectAnnee').value.trim(),
+    type: document.getElementById('lectType').value,
+    discipline: document.getElementById('lectDiscipline').value,
+    statut: document.getElementById('lectStatut').value,
+    theme: document.getElementById('lectTheme').value.trim(),
+    these: document.getElementById('lectThese').value.trim(),
+    concepts: document.getElementById('lectConcepts').value.trim(),
+    updatedAt: Date.now()
+  };
+  if(lectEditingId){
+    const idx = lectures.findIndex(l=>l.id===lectEditingId);
+    if(idx>-1) lectures[idx] = {...lectures[idx], ...data};
+  } else {
+    data.id = 'l' + Date.now() + Math.floor(Math.random()*1000);
+    lectures.push(data);
+  }
+  saveLectures();
+  closeLectForm();
+  renderBiblioFilters();
+  renderBiblioList();
+}
+
+loadLectures();
+
+/* ---------------- Import en masse ---------------- */
+const bulkToggleBtn = document.getElementById('bulkToggleBtn');
+const bulkPanel = document.getElementById('bulkPanel');
+const bulkPreviewBtn = document.getElementById('bulkPreviewBtn');
+const bulkConfirmBtn = document.getElementById('bulkConfirmBtn');
+const bulkPreviewList = document.getElementById('bulkPreviewList');
+const bulkCount = document.getElementById('bulkCount');
+let bulkCandidates = [];
+
+bulkToggleBtn.addEventListener('click', ()=>{
+  bulkPanel.classList.toggle('open');
+});
+
+function splitBulkText(raw){
+  // Une entrée par ligne non vide ; si une ligne semble être la suite de la précédente
+  // (elle commence par une minuscule, "p.", "pp." ou une URL), on la rattache à la précédente.
+  const rawLines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const merged = [];
+  for(const line of rawLines){
+    const startsLikeContinuation = /^[a-zàâéèêîôû]/.test(line) || /^(pp?\.|https?:\/\/|vol\.|n[°o]\s)/i.test(line);
+    if(merged.length && startsLikeContinuation){
+      merged[merged.length-1] += ' ' + line;
+    } else {
+      merged.push(line);
+    }
+  }
+  return merged;
+}
+
+bulkPreviewBtn.addEventListener('click', ()=>{
+  const raw = document.getElementById('bulkText').value;
+  bulkCandidates = splitBulkText(raw);
+  if(bulkCandidates.length === 0){
+    bulkCount.textContent = 'Colle du texte avant de prévisualiser.';
+    bulkPreviewList.style.display = 'none';
+    bulkConfirmBtn.style.display = 'none';
+    return;
+  }
+  bulkCount.textContent = `${bulkCandidates.length} référence(s) détectée(s) — décoche celles à ignorer (ex : lignes mal coupées), puis importe.`;
+  bulkPreviewList.innerHTML = bulkCandidates.map((c,i) => `
+    <div class="bp-item">
+      <input type="checkbox" checked data-idx="${i}">
+      <span class="bp-text">${escapeHtml(c)}</span>
+    </div>
+  `).join('');
+  bulkPreviewList.style.display = 'block';
+  bulkConfirmBtn.style.display = 'inline-block';
+});
+
+bulkConfirmBtn.addEventListener('click', ()=>{
+  const discipline = document.getElementById('bulkDiscipline').value;
+  const theme = document.getElementById('bulkTheme').value;
+  const checks = bulkPreviewList.querySelectorAll('input[type=checkbox]');
+  let added = 0;
+  checks.forEach(chk => {
+    if(!chk.checked) return;
+    const idx = parseInt(chk.dataset.idx, 10);
+    const ref = bulkCandidates[idx];
+    if(!ref) return;
+    // Extraction simple : auteur = avant la première virgule/parenthèse, année = premier nombre à 4 chiffres
+    const yearMatch = ref.match(/\b(19|20)\d{2}\b/);
+    const authorMatch = ref.match(/^([^,(«]+)/);
+    lectures.push({
+      id: 'l' + Date.now() + Math.floor(Math.random()*100000) + added,
+      titre: ref,
+      auteur: authorMatch ? authorMatch[1].trim() : '',
+      annee: yearMatch ? yearMatch[0] : '',
+      type: 'Article',
+      discipline,
+      statut: 'À lire',
+      theme,
+      these: '',
+      concepts: '',
+      updatedAt: Date.now()
+    });
+    added++;
+  });
+  saveLectures();
+  renderBiblioFilters();
+  renderBiblioList();
+  bulkCount.textContent = `${added} fiche(s) importée(s). Va dans l'onglet Bibliothèque pour les consulter.`;
+  bulkPreviewList.style.display = 'none';
+  bulkConfirmBtn.style.display = 'none';
+  document.getElementById('bulkText').value = '';
+});
+
+</script>
+</body>
+</html>
