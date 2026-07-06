@@ -353,7 +353,10 @@ button{font-family:inherit; cursor:pointer;}
 
       <div class="bulk-panel" id="importPanel">
         <h3>Restaurer depuis une sauvegarde</h3>
-        <div class="hint">Colle ici le contenu JSON d'une sauvegarde précédente. Cela ajoutera ces fiches à celles déjà présentes (les doublons par identifiant seront ignorés).</div>
+        <div class="hint">Le plus fiable pour un gros fichier : clique « Choisir un fichier » et sélectionne directement ton .json — évite les soucis de copier-coller sur un gros volume. Tu peux aussi coller le contenu à la main dans la zone de texte ci-dessous si tu préfères.</div>
+        <div class="row">
+          <input type="file" id="importFileInput" accept=".json,application/json" style="font-family:var(--sans); font-size:0.85rem;">
+        </div>
         <textarea id="importText" placeholder='[{"id":"l...","titre":"...","auteur":"...", ...}]'></textarea>
         <div class="bulk-actions">
           <button class="bulk-preview-btn" id="restoreBtn">Restaurer</button>
@@ -1332,20 +1335,43 @@ document.getElementById('downloadBtn').addEventListener('click', ()=>{
   }
 });
 
+document.getElementById('importFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const status = document.getElementById('restoreStatus');
+  status.textContent = `Lecture de « ${file.name} » (${(file.size/1024).toFixed(0)} Ko)…`;
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('importText').value = reader.result;
+    status.textContent = `Fichier chargé (${(file.size/1024).toFixed(0)} Ko). Clique sur « Restaurer » pour l'intégrer.`;
+  };
+  reader.onerror = () => {
+    status.textContent = 'Impossible de lire ce fichier depuis le navigateur. Essaie de copier-coller son contenu à la main.';
+  };
+  reader.readAsText(file, 'utf-8');
+});
+
 document.getElementById('restoreBtn').addEventListener('click', ()=>{
   const status = document.getElementById('restoreStatus');
+  const raw = document.getElementById('importText').value.trim();
+  if(!raw){
+    status.textContent = 'Choisis un fichier ou colle du JSON avant de restaurer.';
+    return;
+  }
   let parsed;
   try{
-    parsed = JSON.parse(document.getElementById('importText').value);
+    parsed = JSON.parse(raw);
     if(!Array.isArray(parsed)) throw new Error('not array');
   } catch(e){
-    status.textContent = 'Ce texte ne semble pas être un JSON valide de sauvegarde.';
+    status.textContent = 'JSON invalide : ' + e.message + '. Vérifie que le fichier entier a bien été chargé (pas coupé), et qu\'il commence par [ et finit par ].';
     return;
   }
   const existingIds = new Set(lectures.map(l=>l.id));
-  let added = 0;
+  let added = 0, skippedNoId = 0;
   parsed.forEach(item => {
-    if(item && item.id && !existingIds.has(item.id)){
+    if(!item) return;
+    if(!item.id){ skippedNoId++; return; }
+    if(!existingIds.has(item.id)){
       lectures.push(item);
       existingIds.add(item.id);
       added++;
@@ -1354,8 +1380,9 @@ document.getElementById('restoreBtn').addEventListener('click', ()=>{
   saveLectures();
   renderBiblioFilters();
   renderBiblioList();
-  status.textContent = `${added} fiche(s) restaurée(s) (${parsed.length - added} déjà présente(s) ignorée(s)).`;
+  status.textContent = `${added} fiche(s) restaurée(s) sur ${parsed.length} (${parsed.length - added - skippedNoId} doublon(s) ignoré(s)${skippedNoId ? ', ' + skippedNoId + ' sans identifiant ignoré(s)' : ''}).`;
   document.getElementById('importText').value = '';
+  document.getElementById('importFileInput').value = '';
 });
 
 /* ---------------- Import en masse ---------------- */
