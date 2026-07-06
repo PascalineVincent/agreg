@@ -326,7 +326,18 @@ button{font-family:inherit; cursor:pointer;}
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="bulk-toggle" id="exportBtn">Exporter une sauvegarde (JSON)</button>
           <button class="bulk-toggle" id="importBtn">Restaurer une sauvegarde</button>
+          <button class="bulk-toggle" id="zoteroBtn">Exporter vers Zotero (.bib)</button>
           <button class="lect-goto-biblio" id="gotoBiblioBtn">Voir la bibliothèque →</button>
+        </div>
+      </div>
+
+      <div class="bulk-panel" id="zoteroPanel">
+        <h3>Export vers Zotero</h3>
+        <div class="hint">Télécharge ce fichier .bib puis, dans Zotero : Fichier → Importer → « Un fichier (BibTeX, RIS...) » → sélectionne-le. Le champ « titre » de Zotero contiendra la référence complète (le découpage détaillé auteur/revue/pages n'est pas garanti pour les fiches importées en masse). Le statut et le thème sont ajoutés en note.</div>
+        <textarea id="zoteroText" readonly></textarea>
+        <div class="bulk-actions">
+          <button class="bulk-preview-btn" id="downloadBibBtn">Télécharger le fichier .bib</button>
+          <button class="bulk-confirm-btn" id="copyBibBtn" style="display:inline-block;">Copier</button>
         </div>
       </div>
 
@@ -365,6 +376,30 @@ button{font-family:inherit; cursor:pointer;}
       <div class="biblio-level">
         <div class="biblio-label">Statut</div>
         <div class="lect-filters" id="biblioStatChips"></div>
+      </div>
+
+      <div class="bulk-panel" id="fixThemePanel">
+        <h3>Corriger le classement</h3>
+        <div class="hint" id="fixThemeHint"></div>
+        <div class="row">
+          <select id="fixNewDiscipline"><option>Économie</option><option>Sociologie</option><option>Histoire</option></select>
+          <select id="fixNewTheme">
+            <option>Analyse économique du Droit</option>
+            <option>Libre-échange et protectionnisme</option>
+            <option>Choix publics et économie politique</option>
+            <option>Religions : pratiques, appartenances, pouvoir</option>
+            <option>Diversité des origines : inégalités et méthodes d'enquêtes</option>
+            <option>Le travail aujourd'hui</option>
+            <option>La France, métropole impériale</option>
+            <option>Ouvriers et désindustrialisation en Europe occidentale</option>
+            <option>Autre / à préciser</option>
+          </select>
+          <input type="text" id="fixThemeCustom" placeholder="Thème personnalisé (si « Autre »)" style="flex:1; min-width:160px; font-family:var(--sans); font-size:0.85rem; padding:8px 10px; border:1px solid #b8ac8e; background:#fbf7ee; color:var(--ink);">
+        </div>
+        <div class="bulk-actions">
+          <button class="bulk-preview-btn" id="fixThemeApplyBtn">Appliquer à ces fiches</button>
+        </div>
+        <div class="bulk-count" id="fixThemeStatus"></div>
       </div>
 
       <div class="lect-filters">
@@ -995,7 +1030,47 @@ function renderBiblioFilters(){
   document.querySelectorAll('#biblioStatChips .chip').forEach(c=>{
     c.addEventListener('click', ()=>{ lectFilterStat = c.dataset.stat; renderBiblioFilters(); renderBiblioList(); });
   });
+
+  renderFixThemePanel();
 }
+
+function renderFixThemePanel(){
+  const panel = document.getElementById('fixThemePanel');
+  const hint = document.getElementById('fixThemeHint');
+  if(lectFilterDisc === 'Toutes' || lectFilterTheme === 'Tous'){
+    panel.style.display = 'none';
+    return;
+  }
+  const matching = lectures.filter(l => l.discipline===lectFilterDisc && l.theme===lectFilterTheme);
+  panel.style.display = 'block';
+  hint.textContent = `${matching.length} fiche(s) actuellement classée(s) en « ${lectFilterDisc} / ${lectFilterTheme} ». Choisis la bonne discipline et le bon thème ci-dessous, puis applique — ça ne touche que ces fiches-là.`;
+  document.getElementById('fixThemeStatus').textContent = '';
+}
+
+document.getElementById('fixThemeApplyBtn').addEventListener('click', ()=>{
+  const newDiscipline = document.getElementById('fixNewDiscipline').value;
+  const themeSelect = document.getElementById('fixNewTheme').value;
+  const custom = document.getElementById('fixThemeCustom').value.trim();
+  const newTheme = themeSelect === 'Autre / à préciser' ? custom : themeSelect;
+  if(!newTheme){
+    document.getElementById('fixThemeStatus').textContent = 'Indique un thème (ou choisis « Autre » et précise-le).';
+    return;
+  }
+  let count = 0;
+  lectures.forEach(l => {
+    if(l.discipline===lectFilterDisc && l.theme===lectFilterTheme){
+      l.discipline = newDiscipline;
+      l.theme = newTheme;
+      count++;
+    }
+  });
+  saveLectures();
+  lectFilterDisc = newDiscipline;
+  lectFilterTheme = newTheme;
+  renderBiblioFilters();
+  renderBiblioList();
+  document.getElementById('fixThemeStatus').textContent = `${count} fiche(s) reclassée(s) vers « ${newDiscipline} / ${newTheme} ».`;
+});
 
 document.getElementById('biblioSearch').addEventListener('input', renderBiblioList);
 document.getElementById('gotoBiblioBtn').addEventListener('click', ()=> switchTab('biblio'));
@@ -1124,11 +1199,99 @@ loadLectures();
 /* ---------------- Export / Import de sauvegarde ---------------- */
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
+const zoteroBtn = document.getElementById('zoteroBtn');
 const exportPanel = document.getElementById('exportPanel');
 const importPanel = document.getElementById('importPanel');
+const zoteroPanel = document.getElementById('zoteroPanel');
+
+function bibtexEscape(s){
+  return String(s||'').replace(/[{}]/g,'').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"');
+}
+
+function bibtexKey(item, idx){
+  const base = (item.auteur||'ref').split(/\s+/)[0] + (item.annee||'') ;
+  const clean = base.replace(/[^a-zA-Z0-9]/g,'') || ('ref'+idx);
+  return clean + idx;
+}
+
+const TYPE_TO_BIBTEX = {
+  'Article': 'article',
+  'Ouvrage': 'book',
+  'Chapitre': 'incollection',
+  'Rapport': 'techreport'
+};
+
+function extractDoiUrl(text){
+  const urlMatch = String(text||'').match(/https?:\/\/\S+/);
+  if(!urlMatch) return {doi:null, url:null};
+  let url = urlMatch[0].replace(/[).,;]+$/, ''); // nettoie la ponctuation finale collée
+  const doiMatch = url.match(/doi\.org\/(.+)/i);
+  return {doi: doiMatch ? doiMatch[1] : null, url};
+}
+
+function generateBibtex(items){
+  return items.map((item, idx) => {
+    const entryType = TYPE_TO_BIBTEX[item.type] || 'misc';
+    const key = bibtexKey(item, idx);
+    const {doi, url} = extractDoiUrl(item.titre);
+    const noteParts = [];
+    if(item.discipline) noteParts.push('Discipline : ' + item.discipline);
+    if(item.theme) noteParts.push('Thème : ' + item.theme);
+    if(item.statut) noteParts.push('Statut : ' + item.statut);
+    if(item.concepts) noteParts.push('Concepts : ' + item.concepts);
+    const fields = [
+      `  title = {${bibtexEscape(item.titre)}}`,
+      item.auteur ? `  author = {${bibtexEscape(item.auteur)}}` : null,
+      item.annee ? `  year = {${bibtexEscape(item.annee)}}` : null,
+      doi ? `  doi = {${bibtexEscape(doi)}}` : null,
+      url ? `  url = {${bibtexEscape(url)}}` : null,
+      item.these ? `  abstract = {${bibtexEscape(item.these)}}` : null,
+      noteParts.length ? `  note = {${bibtexEscape(noteParts.join(' ; '))}}` : null
+    ].filter(Boolean).join(',\n');
+    return `@${entryType}{${key},\n${fields}\n}`;
+  }).join('\n\n');
+}
+
+zoteroBtn.addEventListener('click', ()=>{
+  exportPanel.classList.remove('open');
+  importPanel.classList.remove('open');
+  zoteroPanel.classList.toggle('open');
+  if(zoteroPanel.classList.contains('open')){
+    document.getElementById('zoteroText').value = generateBibtex(lectures);
+  }
+});
+
+document.getElementById('copyBibBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('copyBibBtn');
+  try{
+    await navigator.clipboard.writeText(document.getElementById('zoteroText').value);
+    btn.textContent = 'Copié !';
+  } catch(e){
+    document.getElementById('zoteroText').select();
+    btn.textContent = 'Sélectionné — Ctrl/Cmd+C';
+  }
+  setTimeout(()=>{ btn.textContent = 'Copier'; }, 2500);
+});
+
+document.getElementById('downloadBibBtn').addEventListener('click', ()=>{
+  try{
+    const blob = new Blob([document.getElementById('zoteroText').value], {type:'application/x-bibtex'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ecart-bibliotheque.bib';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e){
+    alert('Le téléchargement direct n\'est pas disponible ici : utilise le bouton « Copier » puis colle le contenu dans un fichier .bib.');
+  }
+});
 
 exportBtn.addEventListener('click', ()=>{
   importPanel.classList.remove('open');
+  zoteroPanel.classList.remove('open');
   exportPanel.classList.toggle('open');
   if(exportPanel.classList.contains('open')){
     document.getElementById('exportText').value = JSON.stringify(lectures, null, 2);
@@ -1137,6 +1300,7 @@ exportBtn.addEventListener('click', ()=>{
 
 importBtn.addEventListener('click', ()=>{
   exportPanel.classList.remove('open');
+  zoteroPanel.classList.remove('open');
   importPanel.classList.toggle('open');
 });
 
